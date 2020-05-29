@@ -102,6 +102,7 @@ uint8_t ZoneToIOMap[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 #endif
 
 static uint16_t outState;
+static uint16_t duration_sec;
 static uint16_t prevOutState;
 
 static void io_latch()
@@ -121,8 +122,13 @@ static void io_latch()
         if (stat(EXTERNAL_SCRIPT, &buffer) == 0) {
             for (int i = 0; i <= NUM_ZONES; i++)
             {
-                sprintf(cmd, "%s %i %i", EXTERNAL_SCRIPT, i, (outState&(0x01<<i))?1:0);
-                system(cmd);
+                if (outState&(0x01<<i)) {
+                  sprintf(cmd, "%s %i 1 %i", EXTERNAL_SCRIPT, i, duration_sec);
+                  system(cmd);
+                } else {
+                  sprintf(cmd, "%s %i 0", EXTERNAL_SCRIPT, i);
+                  system(cmd);
+                }
             }
         }
 #endif
@@ -398,7 +404,9 @@ static void ProcessEvents()
 			{
 			case 0x01:  // turn on valves in data[0]
 				TurnOnZone(events[i].data[0]);
-				runState.ContinueSchedule(events[i].data[0], events[i].data[1] << 8 | events[i].data[2]);
+        uint16_t duration = events[i].data[1] << 8 | events[i].data[2];
+        runState.ContinueSchedule(events[i].data[0], duration);
+        duration_sec = duration;
 				events[i].time = -1;
 				break;
 			case 0x02:  // turn off all valves
