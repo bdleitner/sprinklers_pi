@@ -404,9 +404,8 @@ static void ProcessEvents()
 			{
 			case 0x01:  // turn on valves in data[0]
 				TurnOnZone(events[i].data[0]);
-        uint16_t duration = events[i].data[1] << 8 | events[i].data[2];
-        runState.ContinueSchedule(events[i].data[0], duration);
-        duration_sec = duration;
+				duration_sec =  events[i].data[1] << 8 | events[i].data[2];
+        runState.ContinueSchedule(events[i].data[0], duration_sec);
 				events[i].time = -1;
 				break;
 			case 0x02:  // turn off all valves
