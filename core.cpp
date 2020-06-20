@@ -396,11 +396,12 @@ static void ProcessEvents()
 			continue;
 		if (time_check >= events[i].time)
 		{
+      uint16_t end_minute = 0;
 			switch (events[i].command)
 			{
 			case 0x01:  // turn on valves in data[0]
 				TurnOnZone(events[i].data[0]);
-				uint16_t end_minute = (events[i].data[1] << 8 | events[i].data[2]);
+				end_minute = (events[i].data[1] << 8 | events[i].data[2]);
 				duration_minute = end_minute - events[i].time;
         runState.ContinueSchedule(events[i].data[0], end_minute);
 				events[i].time = -1;
