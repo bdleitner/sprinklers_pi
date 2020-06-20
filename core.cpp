@@ -39,6 +39,10 @@ static web webServer;
 nntp nntpTimeServer;
 runStateClass runState;
 
+static uint16_t outState;
+static uint16_t duration_minute;
+static uint16_t prevOutState;
+
 // A bitfield that defines which zones are currently on.
 int ZoneState = 0;
 
@@ -86,6 +90,7 @@ void runStateClass::SetManual(bool val, int8_t zone)
 	m_iSchedule = -1;
 	m_eventTime = nntpTimeServer.LocalNow();
 	m_adj=DurationAdjustments();
+	duration_minute = 0;
 }
 
 #ifdef ARDUINO
@@ -100,10 +105,6 @@ uint8_t ZoneToIOMap[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 #define SR_DAT_PIN  2
 #define SR_LAT_PIN  3
 #endif
-
-static uint16_t outState;
-static uint16_t duration_minute;
-static uint16_t prevOutState;
 
 static void io_latch()
 {
@@ -122,13 +123,8 @@ static void io_latch()
         if (stat(EXTERNAL_SCRIPT, &buffer) == 0) {
             for (int i = 0; i <= NUM_ZONES; i++)
             {
-                if (outState&(0x01<<i)) {
-                  sprintf(cmd, "%s %i 1 %i", EXTERNAL_SCRIPT, i, duration_minute);
-                  system(cmd);
-                } else {
-                  sprintf(cmd, "%s %i 0", EXTERNAL_SCRIPT, i);
-                  system(cmd);
-                }
+              sprintf(cmd, "%s %i %i %i", EXTERNAL_SCRIPT, i, (outState&(0x01<<i))?1:0, duration_minute);
+              system(cmd);
             }
         }
 #endif
@@ -404,8 +400,9 @@ static void ProcessEvents()
 			{
 			case 0x01:  // turn on valves in data[0]
 				TurnOnZone(events[i].data[0]);
-          duration_minute = (events[i].data[1] << 8 | events[i].data[2]) - events[i].time;
-        runState.ContinueSchedule(events[i].data[0], duration_minute);
+				uint16_t end_minute = (events[i].data[1] << 8 | events[i].data[2]);
+				duration_minute = end_minute - events[i].time;
+        runState.ContinueSchedule(events[i].data[0], end_minute);
 				events[i].time = -1;
 				break;
 			case 0x02:  // turn off all valves
