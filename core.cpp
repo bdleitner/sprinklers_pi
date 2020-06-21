@@ -118,15 +118,26 @@ static void io_latch()
 	case OT_NONE:
 #ifndef ARDUINO
 #ifdef EXTERNAL_SCRIPT
-        struct stat buffer;
+      struct stat buffer;
+      if (stat(EXTERNAL_SCRIPT, &buffer) == 0)
+      {
         char cmd[50];
-        if (stat(EXTERNAL_SCRIPT, &buffer) == 0) {
-            for (int i = 0; i <= NUM_ZONES; i++)
-            {
-              sprintf(cmd, "%s %i %i %i", EXTERNAL_SCRIPT, i, (outState&(0x01<<i))?1:0, duration_minute);
-              system(cmd);
-            }
+        bool found = false;
+        for (int i = 1; i <= NUM_ZONES; i++)
+        {
+          if (outState & (0x01 << i)) {
+            found = true;
+            sprintf(cmd, "%s %02d %d", EXTERNAL_SCRIPT, i, duration_minute);
+            system(cmd);
+            break;
+          }
         }
+        if (!found)
+        {
+          sprintf(cmd, "%s 00 0", EXTERNAL_SCRIPT);
+          system(cmd);
+        }
+      }
 #endif
 #endif
 		break;
